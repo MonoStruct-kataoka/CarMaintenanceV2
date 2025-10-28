@@ -1207,25 +1207,24 @@ body {
         box-shadow: 0 3px 10px rgba(0,0,0,0.2);
     }
 
-    /* 記号説明パネル */
-    .legend-panel {
-        width: 240px;
+    /* 記号説明モーダル（モバイル） */
+    .legend-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
     }
 
-    .legend-toggle {
-        width: 35px;
-        height: 70px;
-        font-size: 18px;
+    .legend-item-modal {
+        padding: 15px;
     }
 
-    .legend-title {
-        font-size: 14px;
+    .legend-symbol-large {
+        width: 50px;
+        height: 50px;
+        font-size: 28px;
     }
 
-    .legend-symbol {
-        width: 30px;
-        height: 30px;
-        font-size: 16px;
+    .legend-text-large {
+        font-size: 13px;
     }
 
     .legend-text {

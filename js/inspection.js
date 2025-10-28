@@ -925,10 +925,25 @@ async function loadPhotos(recordId) {
 }
 
 // 記号説明パネルの開閉
-function toggleLegend() {
-    const panel = document.getElementById('legendPanel');
-    panel.classList.toggle('show');
+// 記号説明モーダルを開く
+function openLegendModal() {
+    const modal = document.getElementById('legendModal');
+    modal.style.display = 'flex';
 }
+
+// 記号説明モーダルを閉じる
+function closeLegendModal() {
+    const modal = document.getElementById('legendModal');
+    modal.style.display = 'none';
+}
+
+// モーダル外クリックで閉じる
+window.addEventListener('click', function(event) {
+    const legendModal = document.getElementById('legendModal');
+    if (event.target === legendModal) {
+        closeLegendModal();
+    }
+});
 
 // トースト通知
 function showToast(message) {

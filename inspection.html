@@ -21,6 +21,9 @@
                 </div>
             </div>
             <div class="header-info">
+                <button class="legend-icon-btn" onclick="openLegendModal()" title="点検記号の説明">
+                    <i class="fas fa-info-circle"></i>
+                </button>
                 <button class="search-shortcut-btn" onclick="location.href='search.html'" title="整備記録検索">
                     <i class="fas fa-search"></i>
                     <span>検索</span>
@@ -277,52 +280,58 @@
             </button>
         </div>
 
-        <!-- 記号説明パネル -->
-        <div class="legend-panel" id="legendPanel">
-            <button class="legend-toggle" onclick="toggleLegend()">
-                <i class="fas fa-book"></i>
-            </button>
-            <div class="legend-title">点検記号の説明</div>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #4CAF50;">✓</div>
-                    <div class="legend-text">点検良好</div>
+        <!-- 記号説明モーダル -->
+        <div class="modal" id="legendModal">
+            <div class="modal-content legend-modal-content">
+                <div class="modal-header">
+                    <h3>点検記号の説明</h3>
+                    <button class="modal-close" onclick="closeLegendModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #f44336;">×</div>
-                    <div class="legend-text">交換</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #ff9800;">A</div>
-                    <div class="legend-text">調整</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #2196F3;">C</div>
-                    <div class="legend-text">清掃</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #9c27b0;">P</div>
-                    <div class="legend-text">省略</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #795548;">○</div>
-                    <div class="legend-text">特定整備</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #607d8b;">△</div>
-                    <div class="legend-text">修理</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #009688;">T</div>
-                    <div class="legend-text">締付</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #00BCD4;">L</div>
-                    <div class="legend-text">給油(水)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-symbol" style="color: #9e9e9e;">／</div>
-                    <div class="legend-text">該当なし</div>
+                <div class="modal-body">
+                    <div class="legend-grid">
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #4CAF50;">✓</div>
+                            <div class="legend-text-large">点検良好</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #f44336;">×</div>
+                            <div class="legend-text-large">交換</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #ff9800;">A</div>
+                            <div class="legend-text-large">調整</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #2196F3;">C</div>
+                            <div class="legend-text-large">清掃</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #9c27b0;">P</div>
+                            <div class="legend-text-large">省略</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #795548;">○</div>
+                            <div class="legend-text-large">特定整備</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #607d8b;">△</div>
+                            <div class="legend-text-large">修理</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #009688;">T</div>
+                            <div class="legend-text-large">締付</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #00BCD4;">L</div>
+                            <div class="legend-text-large">給油(水)</div>
+                        </div>
+                        <div class="legend-item-modal">
+                            <div class="legend-symbol-large" style="color: #9e9e9e;">／</div>
+                            <div class="legend-text-large">該当なし</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
