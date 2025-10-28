@@ -39,19 +39,27 @@
             </button>
             <button class="tab-btn" data-tab="engine">
                 <span class="tab-text">エンジンルーム</span>
-                <span class="tab-badge">0/6</span>
+                <span class="tab-badge">0/9</span>
             </button>
             <button class="tab-btn" data-tab="interior">
                 <span class="tab-text">室内点検</span>
-                <span class="tab-badge">0/4</span>
+                <span class="tab-badge">0/7</span>
             </button>
             <button class="tab-btn" data-tab="undercarriage">
                 <span class="tab-text">足廻り点検</span>
-                <span class="tab-badge">0/4</span>
+                <span class="tab-badge">0/11</span>
             </button>
             <button class="tab-btn" data-tab="bottom">
                 <span class="tab-text">下廻り点検</span>
-                <span class="tab-badge">0/2</span>
+                <span class="tab-badge">0/8</span>
+            </button>
+            <button class="tab-btn" data-tab="obd">
+                <span class="tab-text">車載式故障診断装置</span>
+                <span class="tab-badge">0/1</span>
+            </button>
+            <button class="tab-btn" data-tab="daily">
+                <span class="tab-text">日常点検</span>
+                <span class="tab-badge">0/10</span>
             </button>
             <button class="tab-btn" data-tab="additional">
                 <span class="tab-text">追加項目</span>
@@ -99,16 +107,24 @@
                                 <input type="text" class="input-field" id="first-registration" placeholder="例：令和6年3月">
                             </div>
                             <div class="input-group">
-                                <label class="input-label">走行距離（km） <span class="required">*</span></label>
-                                <input type="number" class="input-field" id="mileage" placeholder="例：76296">
+                                <label class="input-label">住所</label>
+                                <input type="text" class="input-field" id="address" placeholder="例：東京都新宿区西新宿2-8-1">
                             </div>
                         </div>
 
                         <div class="info-card">
                             <div class="info-card-header">🏢 整備情報</div>
                             <div class="input-group">
-                                <label class="input-label">事業場の名称・所在地</label>
-                                <input type="text" class="input-field" id="workshop-name" value="株式会社日産サティオ埼玉北 寄居サービス工場" readonly style="background: #f3f4f6;">
+                                <label class="input-label">自動車分解整備事業者の氏名又は名称(点検整備者)</label>
+                                <input type="text" class="input-field" id="inspector-name" placeholder="例：株式会社日産サティオ埼玉北">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">事業場の所在地</label>
+                                <input type="text" class="input-field" id="workshop-address" placeholder="例：埼玉県大里郡寄居町大字用土1234-5">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">認証番号</label>
+                                <input type="text" class="input-field" id="certification-number" placeholder="例：関整第1234号">
                             </div>
                             <div class="input-group">
                                 <label class="input-label">点検の年月日 <span class="required">*</span></label>
@@ -119,8 +135,12 @@
                                 <input type="date" class="input-field" id="completion-date">
                             </div>
                             <div class="input-group">
-                                <label class="input-label">整備責任者の氏名</label>
-                                <input type="text" class="input-field" id="mechanic-name" value="田中 太郎" readonly style="background: #f3f4f6;">
+                                <label class="input-label">整備主任者の氏名</label>
+                                <input type="text" class="input-field" id="chief-mechanic-name" placeholder="例：田中 太郎">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">点検(整備)時の総走行距離（km） <span class="required">*</span></label>
+                                <input type="number" class="input-field" id="total-mileage" placeholder="例：76296">
                             </div>
                         </div>
 
@@ -155,15 +175,41 @@
                 <div class="inspection-grid" id="bottom-items"></div>
             </div>
 
+            <!-- 車載式故障診断装置点検 -->
+            <div class="tab-content" data-content="obd">
+                <div class="inspection-grid" id="obd-items"></div>
+            </div>
+
+            <!-- 日常点検 -->
+            <div class="tab-content" data-content="daily">
+                <div class="inspection-grid" id="daily-items"></div>
+            </div>
+
             <!-- 追加項目 -->
             <div class="tab-content" data-content="additional">
+                <!-- その他の点検項目等 -->
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 class="section-header" style="margin: 0;">📝 その他の点検項目等</h3>
+                        <button class="add-part-btn" onclick="showAddCustomItemModal()">
+                            <i class="fas fa-plus"></i> 点検項目を追加
+                        </button>
+                    </div>
+                    <div class="inspection-grid" id="custom-inspection-items"></div>
+                </div>
+
                 <!-- 主な交換部品 -->
                 <div class="section-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                         <h3 class="section-header" style="margin: 0;">🔄 主な交換部品等</h3>
-                        <button class="add-part-btn" onclick="showAddPartModal()">
-                            <i class="fas fa-plus"></i> 部品を追加
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="overall-photo-btn" onclick="openPhotoModal('parts_overall', '交換部品全体')" title="全体写真を撮影">
+                                <i class="fas fa-camera"></i> 全体写真
+                            </button>
+                            <button class="add-part-btn" onclick="showAddPartModal()">
+                                <i class="fas fa-plus"></i> 部品を追加
+                            </button>
+                        </div>
                     </div>
                     <div class="replacement-grid" id="replacement-parts"></div>
                 </div>
@@ -178,6 +224,45 @@
                 <div class="section-card">
                     <h3 class="section-header">📏 測定値</h3>
                     <div class="measurement-grid" id="measurements"></div>
+                </div>
+
+                <!-- 整備事業者情報・点検実施情報 -->
+                <div class="section-card">
+                    <h3 class="section-header">🏢 整備事業者情報・点検実施情報</h3>
+                    <div class="info-summary-grid">
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">自動車分解整備事業者の氏名又は名称(点検整備者)</label>
+                            <div class="info-summary-value" id="summary-inspector-name">-</div>
+                        </div>
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">事業場の所在地</label>
+                            <div class="info-summary-value" id="summary-workshop-address">-</div>
+                        </div>
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">認証番号</label>
+                            <div class="info-summary-value" id="summary-certification-number">-</div>
+                        </div>
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">点検の年月日</label>
+                            <div class="info-summary-value" id="summary-inspection-date">-</div>
+                        </div>
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">整備完了年月日</label>
+                            <div class="info-summary-value" id="summary-completion-date">-</div>
+                        </div>
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">整備主任者の氏名</label>
+                            <div class="info-summary-value" id="summary-chief-mechanic-name">-</div>
+                        </div>
+                        <div class="info-summary-item">
+                            <label class="info-summary-label">点検(整備)時の総走行距離</label>
+                            <div class="info-summary-value" id="summary-total-mileage">-</div>
+                        </div>
+                    </div>
+                    <div class="info-summary-note">
+                        <i class="fas fa-info-circle"></i>
+                        この情報は「🏢 整備情報」タブで入力した内容が自動的に表示されます。
+                    </div>
                 </div>
             </div>
         </div>
@@ -298,6 +383,32 @@
                         キャンセル
                     </button>
                     <button class="btn btn-primary" onclick="addCustomPart()" style="flex: 1;">
+                        <i class="fas fa-plus"></i> 追加
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- カスタム点検項目追加モーダル -->
+    <div class="modal" id="addCustomItemModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>点検項目を追加</h3>
+                <button class="modal-close" onclick="closeAddCustomItemModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label class="input-label">点検項目名 <span class="required">*</span></label>
+                    <input type="text" class="input-field" id="newCustomItemName" placeholder="例：エアコンフィルター">
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button class="btn btn-secondary" onclick="closeAddCustomItemModal()" style="flex: 1;">
+                        キャンセル
+                    </button>
+                    <button class="btn btn-primary" onclick="addCustomInspectionItem()" style="flex: 1;">
                         <i class="fas fa-plus"></i> 追加
                     </button>
                 </div>

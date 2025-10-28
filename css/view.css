@@ -385,6 +385,95 @@ body {
     gap: 8px;
 }
 
+/* カテゴリ別写真表示 */
+.photo-category {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #e8e8e8;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.category-icon {
+    font-size: 24px;
+}
+
+.category-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    flex: 1;
+}
+
+.category-count {
+    background: linear-gradient(135deg, #ff6b35 0%, #f44336 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.photo-count {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+/* 項目内埋め込み写真 */
+.item-photos {
+    display: none;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.embedded-photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+}
+
+.part-item-wrapper {
+    margin-bottom: 15px;
+}
+
+.photo-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.photo-count-inline {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .photo-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -561,5 +650,33 @@ body {
 
     .photo-item img {
         height: 120px;
+    }
+
+    .photo-category {
+        padding: 15px;
+    }
+
+    .category-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .category-icon {
+        font-size: 20px;
+    }
+
+    .category-title {
+        font-size: 16px;
+    }
+
+    .category-count {
+        padding: 3px 10px;
+        font-size: 12px;
+    }
+
+    .embedded-photo-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+        padding: 8px;
     }
 }

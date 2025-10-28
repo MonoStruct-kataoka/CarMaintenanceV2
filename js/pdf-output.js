@@ -24,8 +24,11 @@ async function loadData(recordId) {
         currentRecord = await API.getRecord('maintenance_records', recordId);
 
         // 写真を読み込み
-        const result = await API.getRecords('inspection_photos', { search: recordId, limit: 1000 });
-        currentPhotos = result.data || [];
+        const result = await API.getRecords('inspection_photos', { limit: 1000 });
+        const allPhotos = result.data || [];
+        
+        // このレコードの写真のみをフィルタリング
+        currentPhotos = allPhotos.filter(photo => photo.record_id === recordId);
 
         // QRコードを生成
         if (currentRecord.qr_code) {
@@ -106,9 +109,13 @@ async function downloadPDF() {
         y += 8;
         doc.text(`車名・型式: ${currentRecord.car_model}`, 20, y);
         y += 8;
-        doc.text(`走行距離: ${currentRecord.mileage ? currentRecord.mileage.toLocaleString() + ' km' : '-'}`, 20, y);
+        doc.text(`住所: ${currentRecord.address || '-'}`, 20, y);
         y += 8;
         doc.text(`点検日: ${formatDate(currentRecord.inspection_date)}`, 20, y);
+        y += 8;
+        doc.text(`点検(整備)時の総走行距離: ${currentRecord.total_mileage ? currentRecord.total_mileage.toLocaleString() + ' km' : '-'}`, 20, y);
+        y += 8;
+        doc.text(`整備主任者: ${currentRecord.chief_mechanic_name || '-'}`, 20, y);
         y += 15;
 
         // 点検結果

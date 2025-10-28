@@ -1,7 +1,7 @@
 // グローバル変数
 let allRecords = [];
 let filteredRecords = [];
-let currentView = 'timeline'; // 'timeline' or 'table'
+let currentView = 'table'; // 'timeline' or 'table' - デフォルトをテーブルに変更
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
@@ -279,8 +279,8 @@ function renderTable() {
                         <i class="fas fa-edit"></i>
                     </button>
                     ${record.status === 'completed' ? `
-                        <button class="action-btn" onclick="generatePDF('${record.id}')" title="PDF出力">
-                            <i class="fas fa-file-pdf"></i>
+                        <button class="action-btn" onclick="generatePDF('${record.id}')" title="印刷">
+                            <i class="fas fa-print"></i>
                         </button>
                         <button class="action-btn" onclick="viewCustomerPage('${record.access_token}')" title="顧客ページ">
                             <i class="fas fa-external-link-alt"></i>

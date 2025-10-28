@@ -4,6 +4,20 @@ let currentRecordId = null;
 let inspectionData = {};
 let photosData = {};
 
+// マーク定義（記号と日本語説明）
+const markDefinitions = {
+    '✓': '点検良好',
+    '×': '交換',
+    'A': '調整',
+    'C': '清掃',
+    'P': '省略',
+    '○': '特定整備',
+    '△': '修理',
+    'T': '締付',
+    'L': '給油(水)',
+    '/': '該当なし'
+};
+
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
     // URLパラメータからレコードIDを取得
@@ -19,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInspectionItems();
     renderReplacementParts();
     renderMeasurements();
+    renderCustomInspectionItems();
 
     // タブ切り替えイベント
     setupTabNavigation();
@@ -32,9 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('vehicle-display').textContent = value;
     });
 
-    // 既存レコードがある場合は読み込み
+    // 整備情報の自動サマリー更新
+    setupSummaryAutoUpdate();
+
+    // 既存レコードがある場合は読み込み、ない場合はデータをクリア
     if (currentRecordId) {
         loadRecord(currentRecordId);
+    } else {
+        // 新規レコードの場合、データを初期化
+        inspectionData = {};
+        photosData = {};
+        clearAllCameraButtonBadges();
     }
 });
 
@@ -69,6 +92,8 @@ function switchTab(tabName) {
         interior: '室内点検',
         undercarriage: '足廻り点検',
         bottom: '下廻り点検',
+        obd: '車載式故障診断装置点検',
+        daily: '日常点検',
         additional: '追加項目'
     };
     document.getElementById('section-title').textContent = titles[tabName];
@@ -78,7 +103,7 @@ function switchTab(tabName) {
 
 // 点検項目を描画
 function renderInspectionItems() {
-    ['engine', 'interior', 'undercarriage', 'bottom'].forEach(section => {
+    ['engine', 'interior', 'undercarriage', 'bottom', 'obd', 'daily'].forEach(section => {
         const container = document.getElementById(`${section}-items`);
         if (!container) return;
 
@@ -95,11 +120,12 @@ function renderInspectionItems() {
                                 <div class="item-row">
                                     <div class="item-name ${item.required ? 'required' : ''}">${item.name}</div>
                                     <div class="item-actions">
-                                        <div class="check-buttons">
-                                            ${item.codes.map(code => `
-                                                <button class="check-btn" data-code="${code}" onclick="checkItem('${item.id}', '${code}')">${code}</button>
+                                        <select class="mark-select" data-item-id="${item.id}" onchange="selectMark('${item.id}', this.value)">
+                                            <option value="">選択してください</option>
+                                            ${Object.entries(markDefinitions).map(([code, description]) => `
+                                                <option value="${code}">${code} - ${description}</option>
                                             `).join('')}
-                                        </div>
+                                        </select>
                                         <button class="camera-btn" onclick="openPhotoModal('${item.id}', '${item.name}')">
                                             <i class="fas fa-camera"></i>
                                         </button>
@@ -122,16 +148,27 @@ function renderReplacementParts() {
     if (!container) return;
 
     const html = replacementParts.map(part => `
-        <div class="replacement-item">
+        <div class="replacement-item" data-item-id="part_${part.id}">
             <label for="${part.id}" class="replacement-label">${part.name}</label>
             <div style="display: flex; gap: 8px; align-items: center;">
                 <input type="number" class="replacement-quantity" id="${part.id}" placeholder="${part.unit}" min="0" step="0.1" data-part-id="${part.id}" data-part-name="${part.name}" data-part-unit="${part.unit}">
+                <button class="camera-btn" onclick="openPhotoModal('part_${part.id}', '${part.name}')" title="写真撮影">
+                    <i class="fas fa-camera"></i>
+                </button>
                 ${part.custom ? `<button class="delete-part-btn" onclick="deleteCustomPart('${part.id}')" title="削除"><i class="fas fa-trash"></i></button>` : ''}
             </div>
         </div>
     `).join('');
 
     container.innerHTML = html;
+    
+    // 既存の写真がある場合、カメラボタンを更新
+    replacementParts.forEach(part => {
+        const itemId = `part_${part.id}`;
+        if (photosData[itemId] && photosData[itemId].length > 0) {
+            updateCameraButton(itemId);
+        }
+    });
 }
 
 // 測定値を描画
@@ -149,28 +186,25 @@ function renderMeasurements() {
     container.innerHTML = html;
 }
 
-// 項目をチェック
-function checkItem(itemId, code) {
-    const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+// マークを選択（セレクトボックス用）
+function selectMark(itemId, code) {
+    const itemElement = document.querySelector(`.inspection-item[data-item-id="${itemId}"]`);
     if (!itemElement) return;
 
-    // 既存の選択を解除
-    itemElement.querySelectorAll('.check-btn').forEach(btn => {
-        btn.classList.remove('selected');
-    });
-
-    // 新しい選択を追加
-    const button = itemElement.querySelector(`[data-code="${code}"]`);
-    button.classList.add('selected');
-
-    // 項目をチェック済みにマーク
-    itemElement.classList.add('checked');
-
-    // データを保存
-    inspectionData[itemId] = {
-        code: code,
-        timestamp: new Date().toISOString()
-    };
+    if (code) {
+        // 選択された場合
+        itemElement.classList.add('checked');
+        
+        // データを保存
+        inspectionData[itemId] = {
+            code: code,
+            timestamp: new Date().toISOString()
+        };
+    } else {
+        // 「選択してください」に戻された場合
+        itemElement.classList.remove('checked');
+        delete inspectionData[itemId];
+    }
 
     // 進捗を更新
     updateProgress();
@@ -188,7 +222,9 @@ function updateProgress() {
         engine: { total: inspectionItems.engine.reduce((sum, g) => sum + g.items.length, 0), checked: 0 },
         interior: { total: inspectionItems.interior.reduce((sum, g) => sum + g.items.length, 0), checked: 0 },
         undercarriage: { total: inspectionItems.undercarriage.reduce((sum, g) => sum + g.items.length, 0), checked: 0 },
-        bottom: { total: inspectionItems.bottom.reduce((sum, g) => sum + g.items.length, 0), checked: 0 }
+        bottom: { total: inspectionItems.bottom.reduce((sum, g) => sum + g.items.length, 0), checked: 0 },
+        obd: { total: inspectionItems.obd.reduce((sum, g) => sum + g.items.length, 0), checked: 0 },
+        daily: { total: inspectionItems.daily.reduce((sum, g) => sum + g.items.length, 0), checked: 0 }
     };
 
     // チェック済み項目をカウント
@@ -229,6 +265,7 @@ function scanQRCode() {
         document.getElementById('chassis-number').value = 'SNT33-028686';
         document.getElementById('engine-model').value = 'MA03';
         document.getElementById('first-registration').value = '令和6年3月';
+        document.getElementById('address').value = '東京都新宿区西新宿2-8-1';
         document.getElementById('vehicle-display').textContent = '四谷 330 せ 6098';
 
         showToast('✅ 車検証情報を読み取りました');
@@ -268,7 +305,8 @@ function setupPhotoUpload() {
         Array.from(files).forEach(file => {
             const reader = new FileReader();
             reader.onload = function(event) {
-                addPhoto(currentPhotoItemId, event.target.result);
+                // 写真を圧縮してから追加
+                compressAndAddPhoto(currentPhotoItemId, event.target.result);
             };
             reader.readAsDataURL(file);
         });
@@ -276,6 +314,65 @@ function setupPhotoUpload() {
         // 入力をリセット
         e.target.value = '';
     });
+}
+
+// 写真を圧縮してから追加
+function compressAndAddPhoto(itemId, dataUrl) {
+    const img = new Image();
+    img.src = dataUrl;
+    
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        
+        // より小さいサイズに変更（LocalStorage容量対策）
+        const maxWidth = 800;   // 1280 → 800に変更
+        const maxHeight = 800;  // 1280 → 800に変更
+        
+        let width = img.width;
+        let height = img.height;
+        
+        // サイズ調整
+        if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+            }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // JPEG品質をさらに下げる（70% → 60%）
+        let compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        
+        // それでも大きすぎる場合はさらに圧縮
+        if (compressedDataUrl.length > 200000) { // 200KB以上の場合
+            compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5); // 品質50%
+        }
+        if (compressedDataUrl.length > 300000) { // 300KB以上の場合
+            compressedDataUrl = canvas.toDataURL('image/jpeg', 0.4); // 品質40%
+        }
+        
+        // 圧縮後の写真を追加
+        addPhoto(itemId, compressedDataUrl);
+        
+        // 圧縮率をログ出力
+        const originalSize = (dataUrl.length / 1024).toFixed(2);
+        const compressedSize = (compressedDataUrl.length / 1024).toFixed(2);
+        const compressionRate = ((1 - compressedDataUrl.length / dataUrl.length) * 100).toFixed(1);
+        console.log(`写真圧縮: ${originalSize}KB → ${compressedSize}KB (${compressionRate}%削減)`);
+    };
+    
+    img.onerror = function() {
+        console.error('画像の読み込みに失敗しました');
+        showToast('❌ 画像の読み込みに失敗しました');
+    };
 }
 
 // 写真を追加
@@ -366,9 +463,47 @@ function updateCameraButton(itemId) {
     }
 }
 
+// すべてのカメラボタンのバッジをクリア
+function clearAllCameraButtonBadges() {
+    document.querySelectorAll('.camera-btn').forEach(button => {
+        button.classList.remove('has-photos');
+    });
+}
+
+// LocalStorageの使用状況をチェック
+function checkLocalStorageCapacity() {
+    try {
+        let totalSize = 0;
+        for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                totalSize += localStorage[key].length + key.length;
+            }
+        }
+        
+        const totalSizeKB = (totalSize / 1024).toFixed(2);
+        const limitKB = 5120; // 約5MB
+        const usagePercent = ((totalSize / 1024 / limitKB) * 100).toFixed(1);
+        
+        console.log(`LocalStorage使用量: ${totalSizeKB}KB / ${limitKB}KB (${usagePercent}%)`);
+        
+        if (totalSize / 1024 > limitKB * 0.8) { // 80%以上使用
+            showToast(`⚠️ LocalStorage容量が ${usagePercent}% 使用されています`, 'warning');
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('容量チェックエラー:', error);
+        return true;
+    }
+}
+
 // 下書き保存
 async function saveAsDraft() {
     try {
+        // LocalStorage容量チェック
+        checkLocalStorageCapacity();
+        
         const data = collectFormData();
         data.status = 'draft';
 
@@ -385,8 +520,10 @@ async function saveAsDraft() {
             history.replaceState(null, '', `?id=${currentRecordId}`);
         }
     } catch (error) {
-        console.error('保存エラー:', error);
-        showToast('❌ 保存に失敗しました');
+        console.error('下書き保存エラー:', error);
+        // エラーの詳細をトーストで表示
+        const errorMsg = error.message || error.toString();
+        showToast(`❌ 下書き保存に失敗: ${errorMsg.substring(0, 50)}`);
     }
 }
 
@@ -396,7 +533,7 @@ async function completeInspection() {
     const requiredFields = [
         { id: 'client-name', name: '依頼者の氏名又は名称' },
         { id: 'registration-number', name: '自動車登録番号' },
-        { id: 'mileage', name: '走行距離' },
+        { id: 'total-mileage', name: '点検(整備)時の総走行距離' },
         { id: 'inspection-date', name: '点検の年月日' }
     ];
 
@@ -438,8 +575,10 @@ async function completeInspection() {
             }, 1000);
         }
     } catch (error) {
-        console.error('保存エラー:', error);
-        showToast('❌ 保存に失敗しました');
+        console.error('完了保存エラー:', error);
+        // エラーの詳細をトーストで表示
+        const errorMsg = error.message || error.toString();
+        showToast(`❌ 保存に失敗: ${errorMsg.substring(0, 50)}`);
     }
 }
 
@@ -453,11 +592,14 @@ function collectFormData() {
         chassis_number: document.getElementById('chassis-number')?.value || '',
         engine_model: document.getElementById('engine-model')?.value || '',
         first_registration: document.getElementById('first-registration')?.value || '',
-        mileage: parseFloat(document.getElementById('mileage')?.value) || 0,
-        workshop_name: document.getElementById('workshop-name')?.value || '',
+        address: document.getElementById('address')?.value || '',
+        inspector_name: document.getElementById('inspector-name')?.value || '',
+        workshop_address: document.getElementById('workshop-address')?.value || '',
+        certification_number: document.getElementById('certification-number')?.value || '',
         inspection_date: document.getElementById('inspection-date')?.value || '',
         completion_date: document.getElementById('completion-date')?.value || '',
-        mechanic_name: document.getElementById('mechanic-name')?.value || ''
+        chief_mechanic_name: document.getElementById('chief-mechanic-name')?.value || '',
+        total_mileage: parseFloat(document.getElementById('total-mileage')?.value) || 0
     };
 
     // 点検データ
@@ -498,6 +640,9 @@ function collectFormData() {
     const tagsArray = tagsInput.split(',').map(t => t.trim()).filter(t => t);
     vehicleData.tags = JSON.stringify(tagsArray);
 
+    // カスタム点検項目を保存
+    vehicleData.custom_inspection_items = JSON.stringify(customInspectionItems);
+
     return vehicleData;
 }
 
@@ -523,11 +668,14 @@ async function loadRecord(id) {
         document.getElementById('chassis-number').value = record.chassis_number || '';
         document.getElementById('engine-model').value = record.engine_model || '';
         document.getElementById('first-registration').value = record.first_registration || '';
-        document.getElementById('mileage').value = record.mileage || '';
-        document.getElementById('workshop-name').value = record.workshop_name || '';
+        document.getElementById('address').value = record.address || '';
+        document.getElementById('inspector-name').value = record.inspector_name || '';
+        document.getElementById('workshop-address').value = record.workshop_address || '';
+        document.getElementById('certification-number').value = record.certification_number || '';
         document.getElementById('inspection-date').value = record.inspection_date || '';
         document.getElementById('completion-date').value = record.completion_date || '';
-        document.getElementById('mechanic-name').value = record.mechanic_name || '';
+        document.getElementById('chief-mechanic-name').value = record.chief_mechanic_name || '';
+        document.getElementById('total-mileage').value = record.total_mileage || '';
         // タグを復元（JSON文字列または配列に対応）
         let tagsArray = [];
         if (record.tags) {
@@ -561,16 +709,29 @@ async function loadRecord(id) {
             }
         }
 
+        // カスタム点検項目を復元（点検データより先に）
+        if (record.custom_inspection_items) {
+            try {
+                customInspectionItems = JSON.parse(record.custom_inspection_items);
+                // カスタム点検項目を描画
+                renderCustomInspectionItems();
+            } catch (e) {
+                console.error('カスタム点検項目の復元エラー:', e);
+                customInspectionItems = [];
+            }
+        }
+
         // 点検データを復元
         if (record.inspection_data) {
             inspectionData = JSON.parse(record.inspection_data);
             Object.keys(inspectionData).forEach(itemId => {
                 const data = inspectionData[itemId];
-                const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+                const itemElement = document.querySelector(`.inspection-item[data-item-id="${itemId}"]`);
                 if (itemElement) {
-                    const button = itemElement.querySelector(`[data-code="${data.code}"]`);
-                    if (button) {
-                        button.classList.add('selected');
+                    // セレクトボックスの値を設定
+                    const select = itemElement.querySelector('.mark-select');
+                    if (select) {
+                        select.value = data.code;
                         itemElement.classList.add('checked');
                     }
                 }
@@ -609,6 +770,7 @@ async function loadRecord(id) {
         await loadPhotos(id);
 
         updateProgress();
+        updateSummary(); // サマリーも更新
         showToast('✅ レコードを読み込みました');
     } catch (error) {
         console.error('読み込みエラー:', error);
@@ -618,13 +780,19 @@ async function loadRecord(id) {
 
 // 写真を保存
 async function savePhotos() {
-    if (!currentRecordId) return;
+    if (!currentRecordId) {
+        console.warn('savePhotos: currentRecordIdが未設定');
+        return;
+    }
+
+    console.log('写真保存開始:', { recordId: currentRecordId, photosCount: Object.keys(photosData).length });
 
     for (const itemId of Object.keys(photosData)) {
         const photos = photosData[itemId];
         
         // itemIdから項目名を取得
         const itemName = getItemNameById(itemId);
+        console.log('項目写真保存:', { itemId, itemName, photoCount: photos.length });
         
         for (const photo of photos) {
             const photoData = {
@@ -641,14 +809,28 @@ async function savePhotos() {
                 sort_order: photos.indexOf(photo)
             };
 
-            await API.createRecord('inspection_photos', photoData);
+            try {
+                await API.createRecord('inspection_photos', photoData);
+                console.log('写真保存成功:', { itemId, itemName });
+            } catch (error) {
+                console.error('写真保存エラー:', { itemId, itemName, error });
+                throw error; // エラーを再スロー
+            }
         }
     }
+    
+    console.log('写真保存完了');
 }
 
 // itemIdから項目名を取得
 function getItemNameById(itemId) {
-    const sections = ['engine', 'interior', 'undercarriage', 'bottom'];
+    // 全体写真の場合
+    if (itemId === 'parts_overall') {
+        return '交換部品全体';
+    }
+    
+    // 点検項目を検索
+    const sections = ['engine', 'interior', 'undercarriage', 'bottom', 'obd', 'daily'];
     
     for (const section of sections) {
         const items = inspectionItems[section];
@@ -663,14 +845,39 @@ function getItemNameById(itemId) {
         }
     }
     
+    // カスタム点検項目を検索
+    const customItem = customInspectionItems.find(item => item.id === itemId);
+    if (customItem) {
+        return customItem.name;
+    }
+    
+    // 標準交換部品を検索
+    const standardPart = replacementParts.find(p => p.id === itemId);
+    if (standardPart) {
+        return standardPart.name;
+    }
+    
+    // カスタム部品の場合（part_で始まる）
+    if (itemId.startsWith('part_')) {
+        const customPart = replacementParts.find(p => p.id === itemId);
+        if (customPart) {
+            return customPart.name;
+        }
+        // カスタム部品が見つからない場合はIDから推測
+        return itemId.replace('part_', '');
+    }
+    
     return itemId; // 見つからない場合はIDを返す
 }
 
 // 既存の写真を削除
 async function deleteExistingPhotos(recordId) {
     try {
-        const result = await API.getRecords('inspection_photos', { search: recordId, limit: 1000 });
-        const photos = result.data || [];
+        const result = await API.getRecords('inspection_photos', { limit: 1000 });
+        const allPhotos = result.data || [];
+        
+        // このレコードの写真のみをフィルタリング
+        const photos = allPhotos.filter(photo => photo.record_id === recordId);
         
         for (const photo of photos) {
             try {
@@ -687,10 +894,15 @@ async function deleteExistingPhotos(recordId) {
 // 写真を読み込み
 async function loadPhotos(recordId) {
     try {
-        const result = await API.getRecords('inspection_photos', { search: recordId, limit: 1000 });
-        const photos = result.data || [];
+        const result = await API.getRecords('inspection_photos', { limit: 1000 });
+        const allPhotos = result.data || [];
+        
+        // このレコードの写真のみをフィルタリング
+        const photos = allPhotos.filter(photo => photo.record_id === recordId);
 
+        // photosDataを完全にクリア
         photosData = {};
+        
         photos.forEach(photo => {
             if (!photosData[photo.item_id]) {
                 photosData[photo.item_id] = [];
@@ -707,6 +919,8 @@ async function loadPhotos(recordId) {
         });
     } catch (error) {
         console.error('写真読み込みエラー:', error);
+        // エラー時も初期化
+        photosData = {};
     }
 }
 
@@ -808,4 +1022,185 @@ function deleteCustomPart(partId) {
         renderReplacementParts();
         showToast('🗑️ 部品を削除しました');
     }
+}
+
+// カスタム点検項目の管理
+let customInspectionItems = [];
+
+// カスタム点検項目追加モーダルを表示
+function showAddCustomItemModal() {
+    document.getElementById('addCustomItemModal').classList.add('show');
+    document.getElementById('newCustomItemName').value = '';
+    setTimeout(() => {
+        document.getElementById('newCustomItemName').focus();
+    }, 100);
+}
+
+// カスタム点検項目追加モーダルを閉じる
+function closeAddCustomItemModal() {
+    document.getElementById('addCustomItemModal').classList.remove('show');
+}
+
+// カスタム点検項目を追加
+function addCustomInspectionItem() {
+    const name = document.getElementById('newCustomItemName').value.trim();
+
+    if (!name) {
+        showToast('❌ 点検項目名を入力してください');
+        return;
+    }
+
+    // 重複チェック
+    const exists = customInspectionItems.some(item => item.name === name);
+    if (exists) {
+        showToast('❌ 同じ名前の点検項目が既に存在します');
+        return;
+    }
+
+    // 新しい点検項目を追加
+    const itemId = 'custom_item_' + Date.now();
+    customInspectionItems.push({
+        id: itemId,
+        name: name,
+        addedDate: Date.now()
+    });
+
+    // 再描画
+    renderCustomInspectionItems();
+    closeAddCustomItemModal();
+    showToast('✅ 点検項目を追加しました');
+
+    // 追加した項目にスクロール
+    setTimeout(() => {
+        const item = document.querySelector(`[data-item-id="${itemId}"]`);
+        if (item) {
+            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
+}
+
+// カスタム点検項目を削除
+function deleteCustomInspectionItem(itemId) {
+    if (!confirm('この点検項目を削除してもよろしいですか？')) {
+        return;
+    }
+
+    const index = customInspectionItems.findIndex(item => item.id === itemId);
+    if (index > -1) {
+        customInspectionItems.splice(index, 1);
+        
+        // 点検データからも削除
+        if (inspectionData[itemId]) {
+            delete inspectionData[itemId];
+        }
+        
+        // 写真データからも削除
+        if (photosData[itemId]) {
+            delete photosData[itemId];
+        }
+        
+        renderCustomInspectionItems();
+        updateProgress();
+        showToast('🗑️ 点検項目を削除しました');
+    }
+}
+
+// カスタム点検項目を描画
+function renderCustomInspectionItems() {
+    const container = document.getElementById('custom-inspection-items');
+    if (!container) return;
+
+    if (customInspectionItems.length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">カスタム点検項目はまだありません</p>';
+        return;
+    }
+
+    const html = customInspectionItems.map(item => `
+        <div class="inspection-item" data-item-id="${item.id}">
+            <div class="item-row">
+                <div class="item-name">${item.name}</div>
+                <div class="item-actions">
+                    <select class="mark-select" data-item-id="${item.id}" onchange="selectMark('${item.id}', this.value)">
+                        <option value="">選択してください</option>
+                        ${Object.entries(markDefinitions).map(([code, description]) => `
+                            <option value="${code}">${code} - ${description}</option>
+                        `).join('')}
+                    </select>
+                    <button class="camera-btn" onclick="openPhotoModal('${item.id}', '${item.name}')">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <button class="delete-item-btn" onclick="deleteCustomInspectionItem('${item.id}')" title="削除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+    
+    // 既存のチェックと写真を復元
+    customInspectionItems.forEach(item => {
+        if (inspectionData[item.id]) {
+            const data = inspectionData[item.id];
+            const itemElement = document.querySelector(`.inspection-item[data-item-id="${item.id}"]`);
+            if (itemElement) {
+                const select = itemElement.querySelector('.mark-select');
+                if (select) {
+                    select.value = data.code || data;
+                    itemElement.classList.add('checked');
+                }
+            }
+        }
+        
+        if (photosData[item.id] && photosData[item.id].length > 0) {
+            updateCameraButton(item.id);
+        }
+    });
+}
+
+// 整備情報サマリーの自動更新設定
+function setupSummaryAutoUpdate() {
+    const fields = [
+        'inspector-name',
+        'workshop-address',
+        'certification-number',
+        'inspection-date',
+        'completion-date',
+        'chief-mechanic-name',
+        'total-mileage'
+    ];
+
+    fields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.addEventListener('input', updateSummary);
+            element.addEventListener('change', updateSummary);
+        }
+    });
+
+    // 初回更新
+    updateSummary();
+}
+
+// 整備情報サマリーを更新
+function updateSummary() {
+    const summaryFields = {
+        'summary-inspector-name': document.getElementById('inspector-name')?.value || '-',
+        'summary-workshop-address': document.getElementById('workshop-address')?.value || '-',
+        'summary-certification-number': document.getElementById('certification-number')?.value || '-',
+        'summary-inspection-date': document.getElementById('inspection-date')?.value || '-',
+        'summary-completion-date': document.getElementById('completion-date')?.value || '-',
+        'summary-chief-mechanic-name': document.getElementById('chief-mechanic-name')?.value || '-',
+        'summary-total-mileage': document.getElementById('total-mileage')?.value 
+            ? `${parseFloat(document.getElementById('total-mileage').value).toLocaleString()} km` 
+            : '-'
+    };
+
+    Object.entries(summaryFields).forEach(([summaryId, value]) => {
+        const element = document.getElementById(summaryId);
+        if (element) {
+            element.textContent = value;
+        }
+    });
 }

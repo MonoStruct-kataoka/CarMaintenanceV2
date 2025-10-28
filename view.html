@@ -24,9 +24,9 @@
                 <i class="fas fa-edit"></i>
                 <span>編集</span>
             </button>
-            <button class="action-btn-header" onclick="generatePDF()" title="PDF出力" id="pdf-btn" style="display: none;">
-                <i class="fas fa-file-pdf"></i>
-                <span>PDF</span>
+            <button class="action-btn-header" onclick="generatePDF()" title="印刷" id="pdf-btn" style="display: none;">
+                <i class="fas fa-print"></i>
+                <span>印刷</span>
             </button>
             <button class="action-btn-header danger" onclick="deleteRecord()" title="削除">
                 <i class="fas fa-trash"></i>
@@ -78,8 +78,8 @@
                     <span class="info-value" id="first-registration">-</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">走行距離</span>
-                    <span class="info-value" id="mileage">-</span>
+                    <span class="info-label">住所</span>
+                    <span class="info-value" id="address">-</span>
                 </div>
             </div>
         </div>
@@ -89,8 +89,16 @@
             <h2 class="section-header">🏢 整備情報</h2>
             <div class="info-grid">
                 <div class="info-item">
-                    <span class="info-label">事業場の名称・所在地</span>
-                    <span class="info-value" id="workshop-name">-</span>
+                    <span class="info-label">自動車分解整備事業者の氏名又は名称(点検整備者)</span>
+                    <span class="info-value" id="inspector-name">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">事業場の所在地</span>
+                    <span class="info-value" id="workshop-address">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">認証番号</span>
+                    <span class="info-value" id="certification-number">-</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">点検の年月日</span>
@@ -101,8 +109,12 @@
                     <span class="info-value" id="completion-date">-</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">整備責任者の氏名</span>
-                    <span class="info-value" id="mechanic-name">-</span>
+                    <span class="info-label">整備主任者の氏名</span>
+                    <span class="info-value" id="chief-mechanic-name">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">点検(整備)時の総走行距離</span>
+                    <span class="info-value" id="total-mileage">-</span>
                 </div>
             </div>
         </div>
@@ -115,18 +127,30 @@
                 <button class="inspection-tab" onclick="switchInspectionTab('interior')">室内点検</button>
                 <button class="inspection-tab" onclick="switchInspectionTab('undercarriage')">足廻り点検</button>
                 <button class="inspection-tab" onclick="switchInspectionTab('bottom')">下廻り点検</button>
+                <button class="inspection-tab" onclick="switchInspectionTab('obd')">車載式故障診断装置</button>
+                <button class="inspection-tab" onclick="switchInspectionTab('daily')">日常点検</button>
             </div>
             <div class="inspection-content">
                 <div class="inspection-pane active" id="engine-pane"></div>
                 <div class="inspection-pane" id="interior-pane"></div>
                 <div class="inspection-pane" id="undercarriage-pane"></div>
                 <div class="inspection-pane" id="bottom-pane"></div>
+                <div class="inspection-pane" id="obd-pane"></div>
+                <div class="inspection-pane" id="daily-pane"></div>
             </div>
+        </div>
+
+        <!-- その他の点検項目等 -->
+        <div class="section-card" id="custom-items-section" style="display: none;">
+            <h2 class="section-header">📝 その他の点検項目等</h2>
+            <div id="custom-inspection-items"></div>
         </div>
 
         <!-- 交換部品 -->
         <div class="section-card" id="replacement-parts-section" style="display: none;">
             <h2 class="section-header">🔄 主な交換部品等</h2>
+            <!-- 全体写真 -->
+            <div class="item-photos" id="photos-parts_overall"></div>
             <div class="parts-list" id="replacement-parts"></div>
         </div>
 
@@ -136,15 +160,51 @@
             <div class="measurements-grid" id="measurements"></div>
         </div>
 
+        <!-- 整備事業者情報・点検実施情報 -->
+        <div class="section-card">
+            <h2 class="section-header">🏢 整備事業者情報・点検実施情報</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">自動車分解整備事業者の氏名又は名称(点検整備者)</span>
+                    <span class="info-value" id="view-inspector-name">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">事業場の所在地</span>
+                    <span class="info-value" id="view-workshop-address">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">認証番号</span>
+                    <span class="info-value" id="view-certification-number">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">点検の年月日</span>
+                    <span class="info-value" id="view-inspection-date">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">整備完了年月日</span>
+                    <span class="info-value" id="view-completion-date">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">整備主任者の氏名</span>
+                    <span class="info-value" id="view-chief-mechanic-name">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">点検(整備)時の総走行距離</span>
+                    <span class="info-value" id="view-total-mileage">-</span>
+                </div>
+            </div>
+        </div>
+
         <!-- メンテナンスアドバイス -->
         <div class="section-card" id="advice-section" style="display: none;">
             <h2 class="section-header">💡 メンテナンスに関するアドバイス</h2>
             <div class="advice-content" id="advice"></div>
         </div>
 
-        <!-- 写真ギャラリー -->
+        <!-- 写真ギャラリー（旧UI - 非表示） -->
+        <!-- 写真は各項目の下に埋め込み表示されます -->
         <div class="section-card" id="photos-section" style="display: none;">
-            <h2 class="section-header">📸 点検写真</h2>
+            <h2 class="section-header">📸 点検写真（旧表示）</h2>
             <div class="photo-groups" id="photo-groups"></div>
         </div>
 

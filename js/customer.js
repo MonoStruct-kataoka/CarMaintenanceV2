@@ -49,8 +49,11 @@ async function loadRecord(token) {
 // 写真を読み込み
 async function loadPhotos(recordId) {
     try {
-        const result = await API.getRecords('inspection_photos', { search: recordId, limit: 1000 });
-        return result.data || [];
+        const result = await API.getRecords('inspection_photos', { limit: 1000 });
+        const allPhotos = result.data || [];
+        
+        // このレコードの写真のみをフィルタリング
+        return allPhotos.filter(photo => photo.record_id === recordId);
     } catch (error) {
         console.error('写真読み込みエラー:', error);
         return [];
@@ -82,8 +85,8 @@ function renderContent(record, photos) {
                     <div class="info-value">${formatDate(record.inspection_date)}</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">走行距離</div>
-                    <div class="info-value">${record.mileage ? record.mileage.toLocaleString() + ' km' : '-'}</div>
+                    <div class="info-label">点検(整備)時の総走行距離</div>
+                    <div class="info-value">${record.total_mileage ? record.total_mileage.toLocaleString() + ' km' : '-'}</div>
                 </div>
             </div>
         </div>

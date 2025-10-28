@@ -77,7 +77,19 @@ const LocalStorage = {
     
     // レコード保存
     saveRecords: (tableName, records) => {
-        localStorage.setItem(`table_${tableName}`, JSON.stringify(records));
+        try {
+            const jsonString = JSON.stringify(records);
+            const sizeKB = (jsonString.length / 1024).toFixed(2);
+            console.log(`保存データサイズ (${tableName}): ${sizeKB}KB`);
+            
+            localStorage.setItem(`table_${tableName}`, jsonString);
+        } catch (error) {
+            if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+                console.error('LocalStorage容量超過エラー');
+                throw new Error('LocalStorageの容量が不足しています。写真の枚数を減らすか、既存のデータを削除してください。');
+            }
+            throw error;
+        }
     },
     
     // レコード追加

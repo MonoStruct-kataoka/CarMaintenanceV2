@@ -803,11 +803,11 @@
 
             <!-- 表示切替タブ -->
             <div class="view-tabs">
-                <button class="view-tab active" onclick="switchView('timeline')">
-                    <i class="fas fa-history"></i> タイムライン
-                </button>
-                <button class="view-tab" onclick="switchView('table')">
+                <button class="view-tab active" onclick="switchView('table')">
                     <i class="fas fa-table"></i> テーブル
+                </button>
+                <button class="view-tab" onclick="switchView('timeline')">
+                    <i class="fas fa-history"></i> タイムライン
                 </button>
             </div>
 
@@ -823,11 +823,11 @@
             </div>
 
             <!-- タイムライン表示 -->
-            <div id="timeline-container" class="timeline-container active" style="display: none;">
+            <div id="timeline-container" class="timeline-container" style="display: none;">
             </div>
 
             <!-- テーブル表示 -->
-            <div id="results-container" class="table-container" style="display: none;">
+            <div id="results-container" class="table-container active" style="display: none;">
                 <table class="results-table">
                     <thead>
                         <tr>
